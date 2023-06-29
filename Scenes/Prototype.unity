@@ -15413,6 +15413,7 @@ MonoBehaviour:
   invalid: {fileID: 2100000, guid: 766437de87b9ae24e9838c81ca41f491, type: 2}
   player: {fileID: 1660682483}
   canPlace: 1
+  structurePrefab: {fileID: 8947465782178036608, guid: 4a9908d202f518f48aa08468a9beb613, type: 3}
 --- !u!4 &615104241 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7548475810518790250, guid: 7b46690509b1ca54a92c3770a313640c, type: 3}

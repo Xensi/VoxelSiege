@@ -133,6 +133,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
     { 
         return new Vector3(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
     }
+    public List<Block> newList;
     private void DestroyBlock()
     {
         if (hoveringOverBlock != null)
@@ -146,22 +147,214 @@ public class PlayerPlaceBlocks : MonoBehaviour
                 dir.Normalize();
                 body.AddForceAtPosition(dir * 1000, transform.position, ForceMode.Impulse);
             }*/
+            Structure structure = hoveringOverBlock.structure;
+
+            int index = structure.blocks.IndexOf(hoveringOverBlock);
+            hoveringOverBlock.markedForDeath = true;
             Destroy(hoveringOverBlock.gameObject);
             hoveringOverBlock = null;
+            structure.blocks.RemoveAt(index);
+            structure.transform.DetachChildren();
+
+            if (structure.blocks.Count > 0)
+            {
+                newList = new List<Block>(structure.blocks); //blocks to check
+                while (structure.blocks.Count > 1) //only first block will retain structure
+                {
+                    int end = structure.blocks.Count - 1;
+                    Block block = structure.blocks[end];
+                    block.structure = null;
+                    structure.blocks.RemoveAt(end);
+                }
+                structure.blocks[0].transform.parent = structure.transform;
+                //
+
+                for (int i = 0; i < newList.Count; i++)
+                {
+                    Block block = newList[i];
+                    Debug.Log(block.gameObject.name);
+                    //check in all directions for blocks with structures
+                    isolatedCheck = true;
+                    CheckBlockDir(Vector3.up, block);
+                    CheckBlockDir(Vector3.down, block);
+                    CheckBlockDir(Vector3.forward, block);
+                    CheckBlockDir(Vector3.back, block);
+                    CheckBlockDir(Vector3.left, block);
+                    CheckBlockDir(Vector3.right, block);
+                    if (isolatedCheck)
+                    {
+                        if (block.structure == null)
+                        {
+                            GameObject str = Instantiate(structurePrefab, block.transform.position, Quaternion.identity);
+                            Structure strCmp = str.GetComponent<Structure>();
+                            block.transform.parent = str.transform;
+                            strCmp.blocks.Add(block);
+                            block.structure = strCmp;
+                            strCmp.CalculateBodyMass(); 
+                            //Debug.Log("1");
+                        }
+                        else
+                        {
+                            block.structure.CalculateBodyMass(); 
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Destroy(structure.gameObject);
+            }
         }
     }
+    private bool isolatedCheck = false;
+    private void CheckBlockDir(Vector3 dir, Block origin) //if we hit a block that is in a structure, return the structure
+    {
+        float len = 1;
+        RaycastHit hit; 
+        if (Physics.Raycast(origin.transform.position, dir, out hit, len, blockLayer))
+        {
+            Block block = hit.collider.GetComponent<Block>();
+            if (block != null && !block.markedForDeath && !block.gameObject.isStatic)
+            {
+                //Debug.Log("here's " + block.gameObject.name);
+                isolatedCheck = false;
+                if (origin.structure != null) //join origin
+                {
+                    if (!origin.structure.blocks.Contains(block))
+                        origin.structure.blocks.Add(block);
+                    block.transform.parent = origin.structure.transform;
+                    if (block.structure != null && block.structure != origin.structure)
+                    {
+                        //drain it 
+                        while (block.structure.blocks.Count > 0)
+                        {
+                            origin.structure.blocks.Add(block.structure.blocks[0]);
+                            block.structure.blocks[0].transform.parent = origin.structure.transform;
+                            block.structure.blocks.RemoveAt(0);
+                        }  
+
+                        Debug.Log("1");
+                        Destroy(block.structure.gameObject);
+                    }
+                    block.structure = origin.structure;
+                    origin.structure.CalculateBodyMass(); 
+                    //Debug.Log("2");
+                }
+                else if (block.structure != null)
+                {
+                    if (!block.structure.blocks.Contains(origin))
+                        block.structure.blocks.Add(origin);
+                    origin.transform.parent = block.structure.transform;
+                    if (origin.structure != null && origin.structure != block.structure)
+                    {
+                        while (origin.structure.blocks.Count > 0)
+                        {
+                            block.structure.blocks.Add(origin.structure.blocks[0]);
+                            origin.structure.blocks[0].transform.parent = block.structure.transform;
+                            origin.structure.blocks.RemoveAt(0);
+                        }
+
+                        Debug.Log("2");
+                        Destroy(origin.structure.gameObject);
+                    }
+                    origin.structure = block.structure;
+                    block.structure.CalculateBodyMass(); 
+                    //Debug.Log("3");
+                }
+                else //create structure
+                {
+                    GameObject structure = Instantiate(structurePrefab, targetPosition, Quaternion.identity);
+                    Structure structureComp = structure.GetComponent<Structure>();
+                    block.transform.parent = structure.transform;
+                    origin.transform.parent = structure.transform;
+                    structureComp.blocks.Add(block);
+                    structureComp.blocks.Add(origin);
+                    block.structure = structureComp;
+                    origin.structure = structureComp;
+                    structureComp.CalculateBodyMass(); 
+                    //Debug.Log("4");
+                }
+            }
+        }
+        
+    }
     private int num = 0;
+    [SerializeField] private GameObject structurePrefab;
     private void PlaceBlock()
     {
-        if (hoveringOverBlock != null)
-        {
-            hoveringOverBlock.transform.position = RoundVector(hoveringOverBlock.transform.position);
-            hoveringOverBlock.transform.rotation = Quaternion.identity; //reset rotation of whatever we're looking at
-        }
-        GameObject block = Instantiate(selectedBlock, targetPosition, Quaternion.identity);
-        block.name = num.ToString();
+        GameObject blockObj = Instantiate(selectedBlock, targetPosition, Quaternion.identity);
+        blockObj.name = num.ToString();
         num++;
+        Block block = blockObj.GetComponent<Block>();
         //check for adjacent blocks to join with
+        //using raycasts
+        List<Structure> list = new List<Structure>();
+        Structure check = CheckStructureDir(Vector3.forward, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
+        check = CheckStructureDir(-Vector3.forward, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
+        check = CheckStructureDir(Vector3.right, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
+        check = CheckStructureDir(-Vector3.right, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
+        check = CheckStructureDir(Vector3.up, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
+        check = CheckStructureDir(-Vector3.up, block);
+        if (!list.Contains(check) && check != null) list.Add(check);
 
+        if (list.Count > 0) //at least one structure already exists
+        {
+            if (list.Count > 1) //if at least 2 structure, then those structures can be merged.
+            {
+                Structure king = list[0];
+                while (list.Count > 1)
+                {
+                    //get last struct
+                    Structure serf = list[list.Count - 1];
+                    while (serf.blocks.Count > 0)
+                    {
+                        king.blocks.Add(serf.blocks[0]);
+                        serf.blocks[0].transform.parent = king.transform;
+                        serf.blocks.RemoveAt(0);
+                    }
+                    Destroy(serf.gameObject);
+                    list.RemoveAt(list.Count - 1);
+
+                } 
+                Structure structure = list[0];
+                block.transform.parent = structure.transform;
+                structure.blocks.Add(block);
+                block.structure = structure;
+                structure.CalculateBodyMass();
+            }
+            else //add block to this structure
+            {
+                Structure structure = list[0];
+                block.transform.parent = structure.transform;
+                structure.blocks.Add(block);
+                block.structure = structure;
+                structure.CalculateBodyMass();
+            }
+        }
+        else //no structure exists
+        { 
+            GameObject structure = Instantiate(structurePrefab, targetPosition, Quaternion.identity);
+            Structure structureComp = structure.GetComponent<Structure>();
+            block.transform.parent = structure.transform;
+            structureComp.blocks.Add(block);
+            block.structure = structureComp;
+            structureComp.CalculateBodyMass();
+        }
+    }
+    private Structure CheckStructureDir(Vector3 dir, Block placed) //if we hit a block that is in a structure, return the structure
+    { 
+        float len = 1;
+        RaycastHit hit;
+        if (Physics.Raycast(targetPosition, dir, out hit, len, blockLayer))
+        {
+            Block block = hit.collider.GetComponent<Block>(); 
+            return block.structure;
+        }
+        return null;
     }
 }

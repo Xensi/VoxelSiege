@@ -9,6 +9,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1416544753391873505, guid: 7b46690509b1ca54a92c3770a313640c, type: 3}
+      propertyPath: body
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1416544753391873505, guid: 7b46690509b1ca54a92c3770a313640c, type: 3}
       propertyPath: type
       value: 1
       objectReference: {fileID: 0}
@@ -80,6 +84,7 @@ PrefabInstance:
       propertyPath: m_IsKinematic
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 9181285990871368068, guid: 7b46690509b1ca54a92c3770a313640c, type: 3}
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b46690509b1ca54a92c3770a313640c, type: 3}
