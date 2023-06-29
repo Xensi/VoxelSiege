@@ -8,13 +8,28 @@ public class PlayerPlaceBlocks : MonoBehaviour
     [SerializeField] private Vector3 targetPosition = Vector3.zero;
     [SerializeField] private float armLength = 1;
     LayerMask blockLayer;
-    [SerializeField] private Block hoveringOverBlock;
+    public Block hoveringOverBlock;
     [SerializeField] private BoxCollider playerCollisionCheck;
     [SerializeField] private MeshRenderer collisionCheckRenderer;
     [SerializeField] private Material valid;
     [SerializeField] private Material invalid;
     [SerializeField] private CharacterController player;
     [SerializeField] private bool canPlace = true;
+
+    public static PlayerPlaceBlocks Instance { get; private set; }
+    private void Awake()
+    {
+        // If there is an instance, and it's not me, delete myself.
+
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+        }
+        else
+        {
+            Instance = this;
+        }
+    }
     private void Start()
     {
         blockLayer = LayerMask.GetMask("Block");
@@ -135,6 +150,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
             hoveringOverBlock = null;
         }
     }
+    private int num = 0;
     private void PlaceBlock()
     {
         if (hoveringOverBlock != null)
@@ -143,6 +159,8 @@ public class PlayerPlaceBlocks : MonoBehaviour
             hoveringOverBlock.transform.rotation = Quaternion.identity; //reset rotation of whatever we're looking at
         }
         GameObject block = Instantiate(selectedBlock, targetPosition, Quaternion.identity);
+        block.name = num.ToString();
+        num++;
         //check for adjacent blocks to join with
 
     }
