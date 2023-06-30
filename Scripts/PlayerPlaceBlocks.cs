@@ -7,7 +7,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
     [SerializeField] private GameObject selectedBlock;
     [SerializeField] private Vector3 targetPosition = Vector3.zero;
     [SerializeField] private float armLength = 1;
-    LayerMask blockLayer;
+    public LayerMask blockLayer;
     public Block hoveringOverBlock;
     [SerializeField] private BoxCollider playerCollisionCheck;
     [SerializeField] private MeshRenderer collisionCheckRenderer;
@@ -40,7 +40,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
         UpdateCollisionChecker();
         if (Input.GetMouseButtonDown(0))
         { //on left click destroy
-            DestroyBlock();
+            DestroyBlockHovering();
         }
         if (Input.GetMouseButtonDown(1))
         { //on right click place
@@ -134,84 +134,90 @@ public class PlayerPlaceBlocks : MonoBehaviour
         return new Vector3(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
     }
     public List<Block> newList;
-    private void DestroyBlock()
+    private void DestroyTargetBlockUpdateStructures()
+    {
+
+    }
+    private void DestroyBlockHovering()
     {
         if (hoveringOverBlock != null)
-        {
-            //hoveringOverBlock.TakeDamage(100);
-            /*Rigidbody body = hoveringOverBlock.GetComponent<Rigidbody>();
-            if (body != null)
+        { 
+            Structure structure = hoveringOverBlock.structure; 
+            if (structure != null)
             {
-                Vector3 dir = hoveringOverBlock.transform.position - transform.position;
-                dir.y = 0;
-                dir.Normalize();
-                body.AddForceAtPosition(dir * 1000, transform.position, ForceMode.Impulse);
-            }*/
-            Structure structure = hoveringOverBlock.structure;
+                int index = structure.blocks.IndexOf(hoveringOverBlock);
+                hoveringOverBlock.markedForDeath = true;
+                Destroy(hoveringOverBlock.gameObject);
+                hoveringOverBlock = null;
+                structure.blocks.RemoveAt(index);
+                structure.transform.DetachChildren();
 
-            int index = structure.blocks.IndexOf(hoveringOverBlock);
-            hoveringOverBlock.markedForDeath = true;
-            Destroy(hoveringOverBlock.gameObject);
-            hoveringOverBlock = null;
-            structure.blocks.RemoveAt(index);
-            structure.transform.DetachChildren();
-
-            if (structure.blocks.Count > 0)
-            {
-                newList = new List<Block>(structure.blocks); //blocks to check
-                while (structure.blocks.Count > 1) //only first block will retain structure
+                if (structure.blocks.Count > 0)
                 {
-                    int end = structure.blocks.Count - 1;
-                    Block block = structure.blocks[end];
-                    block.structure = null;
-                    structure.blocks.RemoveAt(end);
-                }
-                structure.blocks[0].transform.parent = structure.transform;
-                //
-
-                for (int i = 0; i < newList.Count; i++)
-                {
-                    Block block = newList[i];
-                    Debug.Log(block.gameObject.name);
-                    //check in all directions for blocks with structures
-                    isolatedCheck = true;
-                    CheckBlockDir(Vector3.up, block);
-                    CheckBlockDir(Vector3.down, block);
-                    CheckBlockDir(Vector3.forward, block);
-                    CheckBlockDir(Vector3.back, block);
-                    CheckBlockDir(Vector3.left, block);
-                    CheckBlockDir(Vector3.right, block);
-                    if (isolatedCheck)
+                    newList = new List<Block>(structure.blocks); //blocks to check
+                    while (structure.blocks.Count > 1) //only first block will retain structure
                     {
-                        if (block.structure == null)
+                        int end = structure.blocks.Count - 1;
+                        Block block = structure.blocks[end];
+                        block.structure = null;
+                        structure.blocks.RemoveAt(end);
+                    }
+                    structure.blocks[0].transform.parent = structure.transform;
+                    //
+
+                    for (int i = 0; i < newList.Count; i++)
+                    {
+                        Block block = newList[i];
+                        //Debug.Log(block.gameObject.name);
+                        //check in all directions for blocks with structures
+                        isolatedCheck = true;
+                        CheckBlockDir(Vector3.up, block);
+                        CheckBlockDir(Vector3.down, block);
+                        CheckBlockDir(Vector3.forward, block);
+                        CheckBlockDir(Vector3.back, block);
+                        CheckBlockDir(Vector3.left, block);
+                        CheckBlockDir(Vector3.right, block);
+                        if (isolatedCheck)
                         {
-                            GameObject str = Instantiate(structurePrefab, block.transform.position, Quaternion.identity);
-                            Structure strCmp = str.GetComponent<Structure>();
-                            block.transform.parent = str.transform;
-                            strCmp.blocks.Add(block);
-                            block.structure = strCmp;
-                            strCmp.CalculateBodyMass(); 
-                            //Debug.Log("1");
-                        }
-                        else
-                        {
-                            block.structure.CalculateBodyMass(); 
+                            if (block.structure == null)
+                            {
+                                GameObject str = Instantiate(structurePrefab, block.transform.position, Quaternion.identity);
+                                Structure strCmp = str.GetComponent<Structure>();
+                                block.transform.parent = str.transform;
+                                strCmp.blocks.Add(block);
+                                block.structure = strCmp;
+                                strCmp.CalculateBodyMass();
+                                allStructures.Add(strCmp);
+                                //Debug.Log("1");
+                            }
+                            else
+                            {
+                                block.structure.CalculateBodyMass();
+                            }
                         }
                     }
                 }
+                else
+                {
+                    //Destroy(structure.gameObject);
+                }  
             }
             else
             {
-                Destroy(structure.gameObject);
+
+                Destroy(hoveringOverBlock.gameObject);
+                hoveringOverBlock = null;
             }
+            ClearEmptyStructures();
+            WakeUpAllStructures();
         }
     }
-    private bool isolatedCheck = false;
+    private bool isolatedCheck = false; 
     private void CheckBlockDir(Vector3 dir, Block origin) //if we hit a block that is in a structure, return the structure
     {
         float len = 1;
         RaycastHit hit; 
-        if (Physics.Raycast(origin.transform.position, dir, out hit, len, blockLayer))
+        if (Physics.Raycast(origin.transform.position, origin.transform.TransformDirection(dir), out hit, len, blockLayer))
         {
             Block block = hit.collider.GetComponent<Block>();
             if (block != null && !block.markedForDeath && !block.gameObject.isStatic)
@@ -234,7 +240,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
                         }  
 
                         Debug.Log("1");
-                        Destroy(block.structure.gameObject);
+                        //if (block.structure.gameObject.transform.childCount <= 0) Destroy(block.structure.gameObject);
                     }
                     block.structure = origin.structure;
                     origin.structure.CalculateBodyMass(); 
@@ -254,8 +260,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
                             origin.structure.blocks.RemoveAt(0);
                         }
 
-                        Debug.Log("2");
-                        Destroy(origin.structure.gameObject);
+                        //if (block.structure.gameObject.transform.childCount <= 0) Destroy(origin.structure.gameObject);
                     }
                     origin.structure = block.structure;
                     block.structure.CalculateBodyMass(); 
@@ -265,6 +270,7 @@ public class PlayerPlaceBlocks : MonoBehaviour
                 {
                     GameObject structure = Instantiate(structurePrefab, targetPosition, Quaternion.identity);
                     Structure structureComp = structure.GetComponent<Structure>();
+                    allStructures.Add(structureComp);
                     block.transform.parent = structure.transform;
                     origin.transform.parent = structure.transform;
                     structureComp.blocks.Add(block);
@@ -344,6 +350,33 @@ public class PlayerPlaceBlocks : MonoBehaviour
             structureComp.blocks.Add(block);
             block.structure = structureComp;
             structureComp.CalculateBodyMass();
+            allStructures.Add(structureComp);
+        }
+        WakeUpAllStructures();
+    }
+    public List<Structure> allStructures;
+    public void ClearEmptyStructures()
+    {
+        foreach (Structure item in allStructures)
+        {
+            if (item != null)
+            {
+                if (item.transform.childCount <= 0)
+                {
+                    Destroy(item.gameObject);
+                }
+
+            }
+        }
+    }
+    public void WakeUpAllStructures()
+    { 
+        foreach (Structure item in allStructures)
+        {
+            if (item != null)
+            {
+                item.body.WakeUp();
+            }
         }
     }
     private Structure CheckStructureDir(Vector3 dir, Block placed) //if we hit a block that is in a structure, return the structure

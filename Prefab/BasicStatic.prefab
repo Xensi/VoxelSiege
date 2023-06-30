@@ -127,10 +127,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6762ab6769c30bd4098b7d8cc28d0c24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stability: 100
-  body: {fileID: 9181285990871368068}
-  hitpoints: 100
-  alive: 1
-  supportingBlocks: []
-  weight: 20
+  structure: {fileID: 0}
+  mass: 20
+  markedForDeath: 0
   type: 0
+  HP: 100
+  boxCollider: {fileID: 5106627307093847414}

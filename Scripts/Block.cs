@@ -5,7 +5,7 @@ using UnityEngine;
 public class Block : MonoBehaviour
 { 
     public Structure structure;
-    public float weight = 20;
+    public float mass = 20;
     public bool markedForDeath = false;
     public enum BlockType //different block types don't join together automatically.
     {
@@ -13,5 +13,23 @@ public class Block : MonoBehaviour
         Wood,
         Stone
     }
-    [SerializeField] private BlockType type = BlockType.Wood; 
+    [SerializeField] private BlockType type = BlockType.Wood;
+
+    public float HP = 100;
+
+    [SerializeField] private BoxCollider boxCollider;
+
+    public void TakeDamage(float damage)
+    {
+        HP -= damage;
+        if (HP <= 0)
+        {
+            if (structure != null)
+            {
+                structure.blocks.Remove(this);
+            }
+            PlayerPlaceBlocks.Instance.ClearEmptyStructures();
+            Destroy(gameObject);
+        }
+    }
 }
