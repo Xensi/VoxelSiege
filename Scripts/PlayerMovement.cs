@@ -11,7 +11,8 @@ public class PlayerMovement : MonoBehaviour
     public float gravity = -9.81f;
 
     public Transform groundCheck; //position to check ground at
-    public float groundDistance = 0.4f; //radius
+    public float groundRadius = 0.4f; //radius
+    public float groundDistance = 1;
     public LayerMask groundMask;
 
     public bool isGrounded;
@@ -34,8 +35,14 @@ public class PlayerMovement : MonoBehaviour
     }
     void Update()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-
+        RaycastHit hit;
+        //isGrounded = Physics.CheckSphere(groundCheck.position, groundRadius, groundMask);
+        isGrounded = Physics.SphereCast(groundCheck.position, groundRadius, Vector3.down, out hit, groundDistance, groundMask);
+        if (isGrounded)
+        {
+            Rigidbody body = hit.collider.GetComponentInParent<Rigidbody>();
+            body.AddForceAtPosition(Vector3.down * 10, transform.position, ForceMode.Impulse);
+        }
         if (isGrounded && velocity.y < 0)   
         {
             velocity.y = -2f; //negative to force onto ground

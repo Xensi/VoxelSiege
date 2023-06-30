@@ -11,7 +11,10 @@ public class Structure : MonoBehaviour
     {
         blockLayer = LayerMask.GetMask("Block");
     }
-
+    private void FixedUpdate()
+    {
+        body.WakeUp();
+    }
     public void CalculateBodyMass()
     {
         float mass = 0;
@@ -57,47 +60,16 @@ public class Structure : MonoBehaviour
                     float momentum = (newMass * velocity) / 20;
                     float damage = momentum / collision.contactCount; //more contacts less damage
                     total += damage;
-                    thisBlock.TakeDamage(damage);
-                    otherBlock.TakeDamage(damage);
+                    if (damage >= 1)
+                    {
+                        thisBlock.TakeDamage(damage);
+                        otherBlock.TakeDamage(damage);
+                    }
                 }
                 Debug.Log(total);
             } 
 
-        }
-        /*Debug.Log("start");
-        foreach (Block block in blockList)
-        {
-            if (block != null)
-            {
-                Debug.Log(block.name); 
-            }
-        }
-        Debug.Log("end");
-*/
-        /*foreach (Block block in blockList)
-        {
-            if (block != null)
-            {
-                Debug.Log(hit.collider.name);
-                block.TakeDamage();
-            }
-        \float velocity = collision.relativeVelocity.magnitude;
-        float newMass = mass;
-        if (structure != null)
-        {
-            newMass = structure.body.mass;
-        }
-        float momentum = (newMass * velocity) / 25;
-        float damageThreshold = 0;
-
-        Debug.Log(newMass);
-        //Debug.Log(collision.contactCount);
-        if (momentum >= damageThreshold)
-        {
-            hitBlock.TakeDamage(momentum);
-            TakeDamage(momentum);
-        }
-        } */
+        } 
     }
 
 }

@@ -23,13 +23,8 @@ public class Block : MonoBehaviour
     {
         HP -= damage;
         if (HP <= 0)
-        {
-            if (structure != null)
-            {
-                structure.blocks.Remove(this);
-            }
-            PlayerPlaceBlocks.Instance.ClearEmptyStructures();
-            Destroy(gameObject);
+        { 
+            PlayerPlaceBlocks.Instance.DestroyTargetBlockUpdateStructures(this);
         }
     }
 }
