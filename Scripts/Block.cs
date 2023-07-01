@@ -13,7 +13,7 @@ public class Block : MonoBehaviour
         Wood,
         Stone
     }
-    [SerializeField] private BlockType type = BlockType.Wood;
+    public BlockType type = BlockType.Wood;
 
     public float HP = 100;
 
@@ -23,8 +23,15 @@ public class Block : MonoBehaviour
     {
         HP -= damage;
         if (HP <= 0)
-        { 
-            PlayerPlaceBlocks.Instance.DestroyTargetBlockUpdateStructures(this);
+        {
+            if (structure != null)
+            { 
+                PlayerPlaceBlocks.Instance.DestroyTargetBlockUpdateStructures(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

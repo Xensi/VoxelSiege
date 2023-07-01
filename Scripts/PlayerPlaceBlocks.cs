@@ -218,6 +218,10 @@ public class PlayerPlaceBlocks : MonoBehaviour
         if (Physics.Raycast(origin.transform.position, origin.transform.TransformDirection(dir), out hit, len, blockLayer))
         {
             Block block = hit.collider.GetComponent<Block>();
+            if (block.type != origin.type)
+            {
+                return;
+            }
             if (block != null && !block.markedForDeath && !block.gameObject.isStatic)
             {
                 //Debug.Log("here's " + block.gameObject.name);
